@@ -6,11 +6,14 @@ import binascii
 from subprocess import call
 from tools.chdir import ChDir
 from os import path, urandom
+from collections import namedtuple
+from model.download_target import DownloadTarget
 
 class LibDownloader:
     def __init__(self, target):
         self.target = target
-        self.filename = path.basename(target)
+        self.filename = path.basename(self.target)
+
         self.workdir = path.join(tempfile.gettempdir(), path.splitext(self.filename)[0])
         self.target_location = path.join(self.workdir, self.filename)
         self.location = path.join(tempfile.gettempdir(), binascii.hexlify(urandom(16)).decode())
@@ -19,11 +22,19 @@ class LibDownloader:
             os.makedirs(self.workdir)
 
         self.download()
+
+
+    def download(self):
+        download_target = DownloadTarget()
+        download_target = self.target
+
+        urllib.request.urlretrieve(self.target, self.target_location)
+        download_target.md5sum = hashlib.md5(open(self.target_location, 'rb').read()).hexdigest()
+
         self.extract()
         self.clean()
 
-    def download(self):
-        urllib.request.urlretrieve(self.target, self.target_location)
+        return download_target
 
     def extract(self):
         with ChDir(self.workdir):
@@ -41,3 +52,4 @@ class LibDownloader:
 
     def clean(self):
         shutil.rmtree(self.workdir)
+
