@@ -11,7 +11,7 @@ class Symbol:
 
     name =          Column(String)
     nsym =          Column(Integer)
-    version_type =  Column(String)
+    version_filename = Column(String)
     version_index = Column(String)
     version_hidden =Column(String)
     version_name =  Column(String)

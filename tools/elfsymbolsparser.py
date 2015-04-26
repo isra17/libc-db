@@ -7,6 +7,7 @@ from elftools.elf.dynamic import DynamicSection, DynamicSegment
 from elftools.elf.sections import SymbolTableSection
 from elftools.common.py3compat import (
     ifilter, byte2int, bytes2str, itervalues, str2bytes)
+from model.libc_binary import LibcBinary
 
 
 class ElfSymbolsParser:
@@ -14,8 +15,14 @@ class ElfSymbolsParser:
         self.elffile = ELFFile(file)
         self._versioninfo = None
 
+    def parse_all(self):
         self._init_versioninfo()
         self._init_symbols_table()
+
+        lib_binary = LibcBinary()
+        lib_binary.symbols = self.symbols_table
+
+        return lib_binary
 
     def _init_versioninfo(self):
         """ Search and initialize informations about version related sections
@@ -56,17 +63,21 @@ class ElfSymbolsParser:
 
             for nsym, symbol in enumerate(section.iter_symbols()):
                 version = self._symbol_version(nsym)
-                self.symbols_table.append({
-                    'nsym': nsym,
-                    'name': symbol.name,
-                    'version': version,
-                    'st_info': symbol['st_info'].__dict__,
-                    'st_other': symbol['st_other'].__dict__,
-                    'st_value': symbol['st_value'],
-                    'st_size': symbol['st_size'],
-                    'st_shndx': symbol['st_shndx'],
-                    'st_name': symbol['st_name']
-                })
+                self.symbols_table.append(Symbol(
+                    nsym= nsym,
+                    name= symbol.name,
+                    version_filename= version['filename'],
+                    version_index= version['index'],
+                    version_hidden= version['hidden'],
+                    version_name= version['name'],
+                    st_info_bind= symbol['st_info']['bind'],
+                    st_info_type= symbol['st_info']['type'],
+                    st_other_visibility= symbol['st_other']['visibility'],
+                    st_value= symbol['st_value'],
+                    st_size= symbol['st_size'],
+                    st_shndx= symbol['st_shndx'],
+                    st_name= symbol['st_name']
+                ))
 
     def _symbol_version(self, nsym):
         """ Return a dict containing information on the
